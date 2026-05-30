@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Shortener</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --brand-1: #0f766e;
+      --brand-2: #115e59;
+      --accent: #f59e0b;
+      --surface: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 10% 10%, rgba(15, 118, 110, 0.16), transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(245, 158, 11, 0.12), transparent 35%),
+        linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+    }
+
+    .card-enter {
+      animation: cardEnter 360ms ease-out;
+    }
+
+    @keyframes cardEnter {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main id="app" class="min-h-screen flex items-center justify-center p-4">
+    <section class="w-full max-w-xl card-enter">
+      <div class="bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8">
+        <header class="mb-6">
+          <p class="inline-flex items-center rounded-full bg-teal-100 text-teal-800 text-xs font-semibold px-3 py-1 mb-3">
+            Lightweight URL Tool
+          </p>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">URL Shortener</h1>
+          <p class="text-slate-600 mt-2">Paste a long link and get a clean short URL instantly.</p>
+        </header>
+
+        <form @submit.prevent="shortenUrl" class="space-y-4">
+          <label for="urlInput" class="block text-sm font-medium text-slate-700">Long URL</label>
+          <input
+            id="urlInput"
+            v-model.trim="url"
+            type="url"
+            placeholder="https://example.com/very/long/path"
+            class="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-teal-600 transition"
+            :disabled="loading"
+            required
+          />
+
+          <button
+            type="submit"
+            class="w-full rounded-xl px-4 py-3 text-white font-semibold shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed"
+            :style="{ backgroundColor: loading ? '#64748b' : 'var(--brand-1)' }"
+            :disabled="loading"
+          >
+            {{ loading ? 'Shortening...' : 'Shorten Link' }}
+          </button>
+        </form>
+
+        <p v-if="error" class="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+          {{ error }}
+        </p>
+
+        <div v-if="shortUrl" class="mt-6 border border-slate-200 rounded-xl p-4 bg-slate-50">
+          <p class="text-sm font-medium text-slate-700 mb-2">Your short URL</p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input
+              :value="shortUrl"
+              readonly
+              class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-slate-900 bg-white"
+            />
+            <button
+              type="button"
+              @click="copyToClipboard"
+              class="rounded-lg px-4 py-2 text-white font-medium transition"
+              :style="{ backgroundColor: copied ? '#15803d' : 'var(--brand-2)' }"
+            >
+              {{ copied ? 'Copied!' : 'Copy to Clipboard' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const { createApp, ref } = Vue;
+
+    createApp({
+      setup() {
+        const url = ref('');
+        const shortUrl = ref('');
+        const error = ref('');
+        const loading = ref(false);
+        const copied = ref(false);
+
+        const shortenUrl = async () => {
+          error.value = '';
+          shortUrl.value = '';
+          copied.value = false;
+
+          if (!url.value) {
+            error.value = 'Please enter a URL.';
+            return;
+          }
+
+          try {
+            loading.value = true;
+
+            const response = await fetch('api.php', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ url: url.value })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+              throw new Error(data.error || 'Unable to shorten URL.');
+            }
+
+            shortUrl.value = data.short_url;
+          } catch (err) {
+            error.value = err.message || 'Something went wrong. Please try again.';
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const copyToClipboard = async () => {
+          if (!shortUrl.value) return;
+
+          try {
+            await navigator.clipboard.writeText(shortUrl.value);
+            copied.value = true;
+            setTimeout(() => {
+              copied.value = false;
+            }, 1500);
+          } catch (_) {
+            error.value = 'Clipboard access failed. Copy manually from the field.';
+          }
+        };
+
+        return {
+          url,
+          shortUrl,
+          error,
+          loading,
+          copied,
+          shortenUrl,
+          copyToClipboard
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
