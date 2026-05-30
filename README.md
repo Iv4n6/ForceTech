@@ -49,21 +49,25 @@ Default values are suitable for many local XAMPP setups (`root` with empty passw
 ## 5) Run the Application
 
 Open in browser:
-- `http://localhost/url-shortener/index.html`
+- `http://localhost/ForceTech/index.html`
 
 If your folder name differs, adjust the URL accordingly.
 
 ## 5.1) Clean Short Links
 
 This project supports short links in this format:
-- `http://localhost/url-shortener/Ab12Xy`
+- `http://localhost/ForceTech/Ab12Xy`
 
 Requirements:
 - Apache `mod_rewrite` enabled
 - `.htaccess` support allowed in Apache config
 
-If you want a custom domain style output (like `https://short.me/Ab12Xy`), set this in `api.php`:
-- `$baseShortUrl = 'https://short.me';`
+Base short URL configuration
+- By default the backend will auto-detect the current host and build short URLs for the same domain (this avoids forcing a specific domain).
+- To override and force a specific domain (for example a production domain), open `api.php` and set:
+  - `$baseShortUrl = 'https://yourdomain.example';`
+
+If `$baseShortUrl` is left empty the script will use the current request host and path when returning `short_url` in the API response.
 
 ## 6) How It Works
 
@@ -91,7 +95,7 @@ Success response (example):
 {
   "success": true,
   "short_code": "Ab12Xy",
-  "short_url": "http://localhost/url-shortener/Ab12Xy",
+  "short_url": "http://localhost/ForceTech/Ab12Xy",
   "reused": false
 }
 ```
@@ -104,34 +108,24 @@ Success response (example):
 ## 8) Security Notes
 
 - SQL injection protection via PDO prepared statements.
-- URL format validation with scheme check (`http://` or `https://`) and `filter_var`.
+- URL format validation with scheme check (`http://` or `https://`).
 - Random short code generation uses `random_int`.
 - Collision handling for unique short codes.
 
-## 9) Production Recommendations
+## 9) Secrets & Git
 
-- Restrict CORS to your domain instead of `*`.
-- Store DB credentials in environment variables.
-- Serve via HTTPS.
-- Add rate limiting and request logging.
-- Add authentication if you need private link management.
-
-## 10) GitHub Submission Steps
-
-From your project folder, run:
+- Do not commit secrets (passwords, API keys, private keys) to the repository. Use environment variables or a `.env` file that is ignored by Git.
+- This project includes `.env.example` as a template. Copy it to `.env` and fill in private values locally.
+- Ensure `.gitignore` contains `.env` and other local-only files (the repository includes a `.gitignore`).
+- If you accidentally committed a secret, rotate the secret immediately (change the password/key) and purge it from the git history using a tool such as `git filter-repo` or the BFG Repo-Cleaner. Example (BFG):
 
 ```bash
-git init
-git add .
-git commit -m "Initial URL shortener project"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
+# Remove a specific file from history (example: .env)
+bfg --delete-files .env
+# Then clean git and force-push (coordinate with collaborators):
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+git push --force
 ```
 
-If the remote already exists, use:
-
-```bash
-git remote set-url origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
-```
+Note: History-rewriting operations affect collaborators — coordinate before performing them.

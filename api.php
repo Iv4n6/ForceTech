@@ -21,13 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // ------------------------------
 // Configuration (adjust for your environment)
+// Prefer using environment variables to avoid committing secrets.
+// Supported env vars: DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_CHARSET, BASE_SHORT_URL
+// Example (.env): DB_HOST=127.0.0.1
 // ------------------------------
-$dbHost = '127.0.0.1';
-$dbName = 'url_shortener';
-$dbUser = 'root';
-$dbPass = ''; // Set your DB password in production.
-$dbCharset = 'utf8mb4';
-$baseShortUrl = ''; // Optional, e.g. https://short.me
+$dbHost = getenv('DB_HOST') ?: '127.0.0.1';
+$dbName = getenv('DB_NAME') ?: 'url_shortener';
+$dbUser = getenv('DB_USER') ?: 'root';
+$dbPass = getenv('DB_PASS') ?: ''; // Set your DB password in production via env var.
+$dbCharset = getenv('DB_CHARSET') ?: 'utf8mb4';
+$baseShortUrl = getenv('BASE_SHORT_URL') ?: ''; // Empty => auto-detect current host
 
 $dsn = "mysql:host={$dbHost};dbname={$dbName};charset={$dbCharset}";
 
